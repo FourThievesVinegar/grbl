@@ -49,7 +49,6 @@
 #include "coolant_control.h"
 #include "eeprom.h"
 #include "gcode.h"
-#include "limits.h"
 #include "motion_control.h"
 #include "planner.h"
 #include "print.h"
@@ -57,9 +56,9 @@
 #include "protocol.h"
 #include "report.h"
 #include "serial.h"
-#include "spindle_control.h"
 #include "stepper.h"
 #include "jog.h"
+#include "microlab.h"
 
 // ---------------------------------------------------------------------------------------
 // COMPILE-TIME ERROR CHECKING OF DEFINE VALUES:

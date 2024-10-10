@@ -280,6 +280,16 @@ uint8_t gc_execute_line(char *line)
               gc_block.modal.override = OVERRIDE_PARKING_MOTION;
               break;
           #endif
+
+          case 64: // turn on digital output immediately
+            gc_block.non_modal_command = NON_MODAL_TURN_ON_DIGITAL_OUTPUT;
+            break;
+          
+          case 65: // turn off digital output immediately
+            gc_block.non_modal_command = NON_MODAL_TURN_OFF_DIGITAL_OUTPUT;
+            break;
+
+
           default: FAIL(STATUS_GCODE_UNSUPPORTED_COMMAND); // [Unsupported M command]
         }
 
@@ -639,6 +649,18 @@ uint8_t gc_execute_line(char *line)
             FAIL(STATUS_GCODE_G53_INVALID_MOTION_MODE); // [G53 G0/1 not active]
           }
           break;
+
+        case NON_MODAL_TURN_ON_DIGITAL_OUTPUT:
+        case NON_MODAL_TURN_OFF_DIGITAL_OUTPUT:
+          if (bit_isfalse(value_words,bit(WORD_P))) { FAIL(STATUS_GCODE_VALUE_WORD_MISSING); } // [P word missing]
+
+          if(gc_block.values.p == 0.0) { FAIL(STATUS_GCODE_VALUE_WORD_MISSING); }
+          if(gc_block.values.p < 0) { FAIL(STATUS_NEGATIVE_VALUE); }
+          if(gc_block.values.p > OUTPUT_MAX_NUM) { FAIL(STATUS_GCODE_MAX_VALUE_EXCEEDED); }
+
+          bit_false(value_words,bit(WORD_P));
+
+
       }
   }
 
@@ -913,21 +935,6 @@ uint8_t gc_execute_line(char *line)
   gc_state.feed_rate = gc_block.values.f; // Always copy this value. See feed rate error-checking.
   pl_data->feed_rate = gc_state.feed_rate; // Record data for planner use.
 
-  // [4. Set spindle speed ]:
-  if ((gc_state.spindle_speed != gc_block.values.s) || bit_istrue(gc_parser_flags,GC_PARSER_LASER_FORCE_SYNC)) {
-    if (gc_state.modal.spindle != SPINDLE_DISABLE) { 
-      #ifdef VARIABLE_SPINDLE
-        if (bit_isfalse(gc_parser_flags,GC_PARSER_LASER_ISMOTION)) {
-          if (bit_istrue(gc_parser_flags,GC_PARSER_LASER_DISABLE)) {
-             spindle_sync(gc_state.modal.spindle, 0.0);
-          } else { spindle_sync(gc_state.modal.spindle, gc_block.values.s); }
-        }
-      #else
-        spindle_sync(gc_state.modal.spindle, 0.0);
-      #endif
-    }
-    gc_state.spindle_speed = gc_block.values.s; // Update spindle speed state.
-  }
   // NOTE: Pass zero spindle speed for all restricted laser motions.
   if (bit_isfalse(gc_parser_flags,GC_PARSER_LASER_DISABLE)) {
     pl_data->spindle_speed = gc_state.spindle_speed; // Record data for planner use. 
@@ -937,25 +944,6 @@ uint8_t gc_execute_line(char *line)
   gc_state.tool = gc_block.values.t;
 
   // [6. Change tool ]: NOT SUPPORTED
-
-  // [7. Spindle control ]:
-  if (gc_state.modal.spindle != gc_block.modal.spindle) {
-    // Update spindle control and apply spindle speed when enabling it in this block.
-    // NOTE: All spindle state changes are synced, even in laser mode. Also, pl_data,
-    // rather than gc_state, is used to manage laser state for non-laser motions.
-    spindle_sync(gc_block.modal.spindle, pl_data->spindle_speed);
-    gc_state.modal.spindle = gc_block.modal.spindle;
-  }
-  pl_data->condition |= gc_state.modal.spindle; // Set condition flag for planner use.
-
-  // [8. Coolant control ]:
-  if (gc_state.modal.coolant != gc_block.modal.coolant) {
-    // NOTE: Coolant M-codes are modal. Only one command per line is allowed. But, multiple states
-    // can exist at the same time, while coolant disable clears all states.
-    coolant_sync(gc_block.modal.coolant);
-    gc_state.modal.coolant = gc_block.modal.coolant;
-  }
-  pl_data->condition |= gc_state.modal.coolant; // Set condition flag for planner use.
 
   // [9. Override control ]: NOT SUPPORTED. Always enabled. Except for a Grbl-only parking control.
   #ifdef ENABLE_PARKING_OVERRIDE_CONTROL
@@ -1039,6 +1027,13 @@ uint8_t gc_execute_line(char *line)
       clear_vector(gc_state.coord_offset); // Disable G92 offsets by zeroing offset vector.
       system_flag_wco_change();
       break;
+
+    case NON_MODAL_TURN_ON_DIGITAL_OUTPUT:
+    case NON_MODAL_TURN_OFF_DIGITAL_OUTPUT:
+      microlab_set_output((uint8_t) gc_block.values.p - 1, // internally ports are numbered from 0 
+      gc_block.non_modal_command == NON_MODAL_TURN_ON_DIGITAL_OUTPUT);
+      break;
+    
   }
 
 
@@ -1119,8 +1114,6 @@ uint8_t gc_execute_line(char *line)
       if (sys.state != STATE_CHECK_MODE) {
         if (!(settings_read_coord_data(gc_state.modal.coord_select,gc_state.coord_system))) { FAIL(STATUS_SETTING_READ_FAIL); }
         system_flag_wco_change(); // Set to refresh immediately just in case something altered.
-        spindle_set_state(SPINDLE_DISABLE,0.0);
-        coolant_set_state(COOLANT_DISABLE);
       }
       report_feedback_message(MESSAGE_PROGRAM_END);
     }

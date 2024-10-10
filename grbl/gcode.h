@@ -64,6 +64,9 @@
 #define NON_MODAL_ABSOLUTE_OVERRIDE 53 // G53 (Do not alter value)
 #define NON_MODAL_SET_COORDINATE_OFFSET 92 // G92 (Do not alter value)
 #define NON_MODAL_RESET_COORDINATE_OFFSET 102 //G92.1 (Do not alter value)
+#define NON_MODAL_TURN_ON_DIGITAL_OUTPUT 64
+#define NON_MODAL_TURN_OFF_DIGITAL_OUTPUT 65
+
 
 // Modal Group G1: Motion modes
 #define MOTION_MODE_SEEK 0 // G0 (Default: Must be zero)

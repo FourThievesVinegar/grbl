@@ -24,6 +24,34 @@ Arduino CNC Shield pins are remapped to change their original behaviour:
 
 
 
+### Compiling and uploading
+
+#### Arduino IDE
+
+Open `grbl/examples/GrblUpload.ino` in Arduino IDE and compile + upload it from the editor.
+
+#### Linux command line / WSL2
+
+Install compiler:
+
+`sudo apt-get install gcc-avr binutils-avr avr-libc gdb-avr avrdude`
+
+Compile:
+
+`make`
+
+Upload:
+
+Use [avrdude](https://github.com/avrdudes/avrdude) for uploading hex file to the board. Avrdude supports native Arduino USB bootloader to program the board.
 
 
+### GPIO control
+
+WARNING! This is not yet working!!!
+
+Microlab-grbl implements M64-M65 g-code commands (turn on/off digital output immediately) to preserve compatibility with other CNC boards/firmware that may be used in the future with microlab.
+
+`M64 P1` - switch OUTPUT_1 high
+
+`M65 P1` - switch OUTPUT_1 low
 

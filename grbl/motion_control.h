@@ -48,9 +48,6 @@ void mc_arc(float *target, plan_line_data_t *pl_data, float *position, float *of
 // Dwell for a specific number of seconds
 void mc_dwell(float seconds);
 
-// Perform homing cycle to locate machine zero. Requires limit switches.
-void mc_homing_cycle(uint8_t cycle_mask);
-
 // Perform tool length probe cycle. Requires probe switch.
 uint8_t mc_probe_cycle(float *target, plan_line_data_t *pl_data, uint8_t parser_flags);
 

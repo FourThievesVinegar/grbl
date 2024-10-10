@@ -31,13 +31,7 @@
 // in the planner and to let backlash compensation or canned cycle integration simple and direct.
 void mc_line(float *target, plan_line_data_t *pl_data)
 {
-  // If enabled, check for soft limit violations. Placed here all line motions are picked up
-  // from everywhere in Grbl.
-  if (bit_istrue(settings.flags,BITFLAG_SOFT_LIMIT_ENABLE)) {
-    // NOTE: Block jog state. Jogging is a special case and soft limits are handled independently.
-    if (sys.state != STATE_JOG) { limits_soft_check(target); }
-  }
-
+ 
   // If in check gcode mode, prevent motion by blocking planner. Soft limits still work.
   if (sys.state == STATE_CHECK_MODE) { return; }
 
@@ -66,13 +60,7 @@ void mc_line(float *target, plan_line_data_t *pl_data)
 
   // Plan and queue motion into planner buffer
   if (plan_buffer_line(target, pl_data) == PLAN_EMPTY_BLOCK) {
-    if (bit_istrue(settings.flags,BITFLAG_LASER_MODE)) {
-      // Correctly set spindle state, if there is a coincident position passed. Forces a buffer
-      // sync while in M3 laser mode only.
-      if (pl_data->condition & PL_COND_FLAG_SPINDLE_CW) {
-        spindle_sync(PL_COND_FLAG_SPINDLE_CW, pl_data->spindle_speed);
-      }
-    }
+
   }
 }
 
@@ -199,58 +187,6 @@ void mc_dwell(float seconds)
   delay_sec(seconds, DELAY_MODE_DWELL);
 }
 
-
-// Perform homing cycle to locate and set machine zero. Only '$H' executes this command.
-// NOTE: There should be no motions in the buffer and Grbl must be in an idle state before
-// executing the homing cycle. This prevents incorrect buffered plans after homing.
-void mc_homing_cycle(uint8_t cycle_mask)
-{
-  // Check and abort homing cycle, if hard limits are already enabled. Helps prevent problems
-  // with machines with limits wired on both ends of travel to one limit pin.
-  // TODO: Move the pin-specific LIMIT_PIN call to limits.c as a function.
-  #ifdef LIMITS_TWO_SWITCHES_ON_AXES
-    if (limits_get_state()) {
-      mc_reset(); // Issue system reset and ensure spindle and coolant are shutdown.
-      system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT);
-      return;
-    }
-  #endif
-
-  limits_disable(); // Disable hard limits pin change register for cycle duration
-
-  // -------------------------------------------------------------------------------------
-  // Perform homing routine. NOTE: Special motion case. Only system reset works.
-  
-  #ifdef HOMING_SINGLE_AXIS_COMMANDS
-    if (cycle_mask) { limits_go_home(cycle_mask); } // Perform homing cycle based on mask.
-    else
-  #endif
-  {
-    // Search to engage all axes limit switches at faster homing seek rate.
-    limits_go_home(HOMING_CYCLE_0);  // Homing cycle 0
-    #ifdef HOMING_CYCLE_1
-      limits_go_home(HOMING_CYCLE_1);  // Homing cycle 1
-    #endif
-    #ifdef HOMING_CYCLE_2
-      limits_go_home(HOMING_CYCLE_2);  // Homing cycle 2
-    #endif
-  }
-
-  protocol_execute_realtime(); // Check for reset and set system abort.
-  if (sys.abort) { return; } // Did not complete. Alarm state set by mc_alarm.
-
-  // Homing cycle complete! Setup system for normal operation.
-  // -------------------------------------------------------------------------------------
-
-  // Sync gcode parser and planner positions to homed position.
-  gc_sync_position();
-  plan_sync_position();
-
-  // If hard limits feature enabled, re-enable hard limits pin change register after homing cycle.
-  limits_init();
-}
-
-
 // Perform tool length probe cycle. Requires probe switch.
 // NOTE: Upon probe failure, the program will be stopped and placed into ALARM state.
 uint8_t mc_probe_cycle(float *target, plan_line_data_t *pl_data, uint8_t parser_flags)
@@ -369,9 +305,9 @@ void mc_reset()
   if (bit_isfalse(sys_rt_exec_state, EXEC_RESET)) {
     system_set_exec_state_flag(EXEC_RESET);
 
-    // Kill spindle and coolant.
-    spindle_stop();
-    coolant_stop();
+  // kill all microlab outputs
+  for(uint8_t output_number;output_number < OUTPUT_MAX_NUM;output_number++)
+    microlab_set_output(output_number, 0);
 
     // Kill steppers only if in any motion state, i.e. cycle, actively holding, or homing.
     // NOTE: If steppers are kept enabled via the step idle delay setting, this also keeps

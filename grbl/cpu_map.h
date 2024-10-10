@@ -57,22 +57,22 @@
 
   // Define homing/hard limit switch input pins and limit interrupt vectors.
   // NOTE: All limit bit pins must be on the same port, but not on a port with other input pins (CONTROL).
-  #define LIMIT_DDR        DDRB
-  #define LIMIT_PIN        PINB
-  #define LIMIT_PORT       PORTB
-  #define X_LIMIT_BIT      1  // Uno Digital Pin 9
-  #define Y_LIMIT_BIT      2  // Uno Digital Pin 10
-  #ifdef VARIABLE_SPINDLE // Z Limit pin and spindle enabled swapped to access hardware PWM on Pin 11.
-    #define Z_LIMIT_BIT	   4 // Uno Digital Pin 12
-  #else
-    #define Z_LIMIT_BIT    3  // Uno Digital Pin 11
-  #endif
-  #if !defined(ENABLE_DUAL_AXIS)
-    #define LIMIT_MASK     ((1<<X_LIMIT_BIT)|(1<<Y_LIMIT_BIT)|(1<<Z_LIMIT_BIT)) // All limit bits
-  #endif
-  #define LIMIT_INT        PCIE0  // Pin change interrupt enable pin
-  #define LIMIT_INT_vect   PCINT0_vect
-  #define LIMIT_PCMSK      PCMSK0 // Pin change interrupt register
+  
+  // Define microlab GPIO pins
+
+  #define OUTPUT_MAX_NUM 3
+
+  #define OUTPUT1_DDR DDRB
+  #define OUTPUT1_PORT PORTB
+  #define OUTPUT1_BIT 3 // Z+ - Uno Digital Pin 11
+
+  #define OUTPUT2_DDR DDRB
+  #define OUTPUT2_PORT PORTB
+  #define OUTPUT2_BIT 2 // Y+ - Uno Digital Pin 10
+
+  #define OUTPUT3_DDR DDRB
+  #define OUTPUT3_PORT PORTB
+  #define OUTPUT3_BIT 1 // X+ - Uno Digital Pin 9
 
   // Define user-control controls (cycle start, reset, feed hold) input pins.
   // NOTE: All CONTROLs pins must be on the same port and not on a port with other input pins (limits).
@@ -248,13 +248,5 @@
   #endif
 
 #endif
-
-/*
-#ifdef CPU_MAP_CUSTOM_PROC
-  // For a custom pin map or different processor, copy and edit one of the available cpu
-  // map files and modify it to your needs. Make sure the defined name is also changed in
-  // the config.h file.
-#endif
-*/
 
 #endif
