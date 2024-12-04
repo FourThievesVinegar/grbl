@@ -3,19 +3,25 @@
 volatile uint8_t* output_ddr[OUTPUT_MAX_NUM] = {
     &OUTPUT1_DDR,
     &OUTPUT2_DDR,
-    &OUTPUT3_DDR
+    &OUTPUT3_DDR,
+    &OUTPUT4_DDR,
+    &OUTPUT5_DDR
   };
 
   volatile uint8_t* output_port[OUTPUT_MAX_NUM] = {
     &OUTPUT1_PORT,
     &OUTPUT2_PORT,
-    &OUTPUT3_PORT
+    &OUTPUT3_PORT,
+    &OUTPUT4_PORT,
+    &OUTPUT5_PORT
   };
 
  uint8_t output_bit[OUTPUT_MAX_NUM] = {
     OUTPUT1_BIT,
     OUTPUT2_BIT,
-    OUTPUT3_BIT
+    OUTPUT3_BIT,
+    OUTPUT4_BIT,
+    OUTPUT5_BIT
   };
 
 void microlab_gpio_init(){

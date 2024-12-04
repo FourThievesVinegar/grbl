@@ -22,8 +22,6 @@ Arduino CNC Shield pins are remapped to change their original behaviour:
 | SpnEn (Spindle Enable)  | 12 |  OUTPUT_4  |
 | SpnDir (Spindle Direction)  | 13 |  OUTPUT_5  |
 
-OUTPUT_4 AND OUTPUT_5 are not yet supported!!
-
 
 ### Compiling
 
